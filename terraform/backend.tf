@@ -1,9 +1,11 @@
 terraform {
-  backend "s3" {
-    bucket         = "tf-state-terraform-cicd-demo"
+  backend "local" {
+    
+  }
+}
+/*
+bucket         = "tf-state-terraform-cicd-demo"
     key            = "state/app.tfstate"
     region         = "eu-central-1"
     dynamodb_table = "tf-lock-terraform-cicd"
-    encrypt        = true
-  }
-}
+    encrypt        = true */

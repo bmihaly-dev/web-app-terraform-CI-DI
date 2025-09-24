@@ -6,6 +6,7 @@ variable "aws_region" {
 variable "env" {
   description = "Környezet: prod vagy preview"
   type        = string
+  default     = "dev"
   validation {
     condition     = contains(["prod", "preview"], var.env)
     error_message = "env csak 'prod' vagy 'preview' lehet."
@@ -21,6 +22,7 @@ variable "pr_id" {
 variable "image_uri" {
   description = "ECR image URI + tag (pl. 123456789012.dkr.ecr.eu-central-1.amazonaws.com/reactflow-app:pr-123-a1b2c3)"
   type        = string
+  default     = "154744860201.dkr.ecr.eu-central-1.amazonaws.com/reactflow-app:1.0.0"
 }
 
 variable "cpu" {
