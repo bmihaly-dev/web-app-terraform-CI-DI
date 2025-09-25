@@ -48,6 +48,8 @@ Trust policy must allow OIDC tokens from your repo:
   }
 }
 
+---
+
 ## Step 3 — Terraform Variables
 
 aws_region             = "eu-central-1"
@@ -61,6 +63,8 @@ backend_dynamodb_table = "tf-lock-terraform-cicd"
 github_owner           = "<your-github-username-or-org>"
 github_repo            = "<your-repo-name>"
 
+---
+
 ## Step 4 — GitHub Repository Variables
 
 AWS_ROLE_TO_ASSUME	arn:aws:iam::<account_id>:role/terraform-cicd-gha-terraform-role
@@ -68,9 +72,13 @@ TF_BACKEND_BUCKET	tf-state-terraform-cicd-<account_id>-eu-central-1
 TF_BACKEND_KEY	terraform.tfstate
 TF_BACKEND_DDB	tf-lock-terraform-cicd
 
+---
+
 Step 5 — GitHub Actions Workflow
 
 The workflow is defined in .github/workflows/terraform.yml.
+
+---
 
 
 
