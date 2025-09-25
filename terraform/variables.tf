@@ -52,3 +52,28 @@ variable "account_id" {
   description = "AWS account ID"
   type        = string
 }
+
+variable "github_owner" {
+  type = string
+  # pl. "bmihaly-dev"
+}
+
+variable "github_repo" {
+  type = string
+  # pl. "terraform-CICD"
+}
+
+variable "backend_bucket" {
+  type = string
+}
+
+variable "backend_key" {
+  type = string
+}
+
+variable "backend_dynamodb_table" {
+  type = string
+}
+variable "project_name" {
+  type = string
+}
