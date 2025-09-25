@@ -59,65 +59,7 @@ aws dynamodb create-table \
   --region eu-central-1
 ```
 
----
-
-## 🔹 Step 1 — Backend Files
-
-`terraform/backend.tf`:
-```hcl
-terraform {
-  backend "s3" {}
-}
-```
-
-`terraform/backend.hcl` (do **not** commit):
-```hcl
-bucket         = "tf-state-terraform-cicd-<YOUR_ACCOUNT_ID>-eu-central-1"
-key            = "terraform.tfstate"
-region         = "eu-central-1"
-dynamodb_table = "tf-lock-terraform-cicd"
-```
-
-Add to `.gitignore`:
-```
-terraform/backend.hcl
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
-crash.log
-```
-
----
-
-## 🔹 Step 2 — IAM OIDC Role (Terraform)
-
-`terraform/iam-oidc.tf` should define:
-
-- **OIDC provider**: `https://token.actions.githubusercontent.com`  
-  Include both GitHub thumbprints:  
-  `6938fd4d98bab03faadb97b34396831e3780aea1` and `1c58a3a8518e8759bf075b76b750d4f2df264fcd`
-- **IAM role**: `terraform-cicd-gha-terraform-role`
-- Trust policy (scoped to your repo):
-
-```json
-{
-  "Condition": {
-    "StringEquals": {
-      "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-    },
-    "StringLike": {
-      "token.actions.githubusercontent.com:sub": "repo:<github_owner>/<github_repo>:*"
-    }
-  }
-}
-```
-
-Attach a policy that allows **only** S3 backend and DynamoDB lock access (least privilege).
-
----
-
-## 🔹 Step 3 — Terraform Variables
+## 🔹 Step 1 — Terraform Variables
 
 Edit `terraform/terraform.tfvars` with your values:
 
@@ -138,7 +80,7 @@ github_repo            = "<your-repo-name>"
 
 ---
 
-## 🔹 Step 4 — GitHub Repository Variables
+## 🔹 Step 2 — GitHub Repository Variables
 
 In **GitHub → Repo → Settings → Secrets and variables → Actions → Variables**, add:
 
@@ -152,6 +94,22 @@ In **GitHub → Repo → Settings → Secrets and variables → Actions → Vari
 Set `AWS_REGION` in the workflow (already set to `eu-central-1` in this repo).
 
 ---
+## 🐳 Step 3 — Docker Build & Push to ECR
+
+This project assumes your application is containerized and stored in **AWS Elastic Container Registry (ECR)**.
+
+### 1. Create an ECR Repository (one time)
+
+Create a dockerfile for your web application.
+
+### 3. Authenticate Docker to ECR
+
+```bash
+aws ecr get-login-password --region eu-central-1 \
+  | docker login --username AWS --password-stdin <YOUR_ACCOUNT_ID>.dkr.ecr.eu-central-1.amazonaws.com
+```
+
+### 5. Push Image to ECR
 
 ## ▶️ Usage
 
@@ -182,6 +140,7 @@ With this setup:
 - GitHub Actions authenticates via **OIDC**
 - Terraform state in **S3**, locking in **DynamoDB**
 - Automated flow: **Plan on PR**, **Apply on main**
+
 
 
 
