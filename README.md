@@ -46,7 +46,7 @@ Trust policy must allow OIDC tokens from your repo:
   "StringLike": {
     "token.actions.githubusercontent.com:sub": "repo:<github_owner>/<github_repo>:*"
   }
-}
+}```
 
 ---
 ## 🔹 Step 3 — Terraform Variables
@@ -81,6 +81,7 @@ TF_BACKEND_DDB	tf-lock-terraform-cicd
 ## 🔹 Step 5 — GitHub Actions Workflow
 
 The workflow is defined in .github/workflows/terraform.yml.
+
 
 
 
