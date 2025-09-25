@@ -20,11 +20,8 @@ resource "aws_iam_role" "gha_tf_role" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         },
         StringLike = {
-          # Csak a te GitHub repo-dra engedélyezzük
-          "token.actions.githubusercontent.com:sub" = [
-            "repo:${var.github_owner}/${var.github_repo}:ref:refs/heads/main",
-            "repo:${var.github_owner}/${var.github_repo}:pull_request"
-          ]
+          # ENGEDÉS: bármely ref a konkrét repohoz (main, feature/*, pull_request, stb.)
+          "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner}/${var.github_repo}:*"
         }
       }
     }]
