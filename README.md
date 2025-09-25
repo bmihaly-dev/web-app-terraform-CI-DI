@@ -12,23 +12,6 @@ Authentication is handled via **AWS IAM OpenID Connect (OIDC)** trust with GitHu
 
 ---
 
-## 📂 Project Structure
-
-
-
-terraform-CICD/
-├── terraform/ # Terraform configuration
-│ ├── backend.tf # Remote backend (S3 + DynamoDB)
-│ ├── iam-oidc.tf # IAM role + OIDC provider
-│ ├── variables.tf # Variable definitions
-│ ├── terraform.tfvars # Your account/repo-specific values
-│ └── ...
-└── .github/workflows/
-└── terraform.yml # GitHub Actions workflow
-
-
----
-
 ## ✅ Requirements
 
 - AWS account with IAM permissions to create:
@@ -93,5 +76,6 @@ TF_BACKEND_DDB	tf-lock-terraform-cicd
 Step 5 — GitHub Actions Workflow
 
 The workflow is defined in .github/workflows/terraform.yml.
+
 
 
