@@ -4,11 +4,6 @@ This project shows how to run **Terraform securely from GitHub Actions** without
 Authentication is handled via **AWS IAM OpenID Connect (OIDC)** trust with GitHub.
 
 ---
-A ChatGPT ezt mondta:
-
-értelek 🙌 csináljunk belőle egy szép, profi README-t, ahol van világos szerkezet, kódrészletek, táblázatok és kiemelések.
-
-Íme a menőbb, letisztult változat:
 
 # 🚀 Terraform CI/CD with GitHub OIDC
 
@@ -98,4 +93,5 @@ TF_BACKEND_DDB	tf-lock-terraform-cicd
 Step 5 — GitHub Actions Workflow
 
 The workflow is defined in .github/workflows/terraform.yml.
+
 
