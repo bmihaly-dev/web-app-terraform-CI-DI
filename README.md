@@ -1,9 +1,4 @@
-# 🚀 Terraform CI/CD with GitHub OIDC
 
-This project shows how to run **Terraform securely from GitHub Actions** without storing long-lived AWS credentials.  
-Authentication is handled via **AWS IAM OpenID Connect (OIDC)** trust with GitHub.
-
----
 
 # 🚀 Terraform CI/CD with GitHub OIDC
 
@@ -76,6 +71,7 @@ TF_BACKEND_DDB	tf-lock-terraform-cicd
 Step 5 — GitHub Actions Workflow
 
 The workflow is defined in .github/workflows/terraform.yml.
+
 
 
 
