@@ -52,7 +52,7 @@ resource "aws_apprunner_service" "app" {
 
     image_repository {
       image_repository_type = "ECR"
-      image_identifier      = "${aws_ecr_repository.app.repository_url}:${var.image_tag}"
+      image_identifier      = "154744860201.dkr.ecr.eu-central-1.amazonaws.com/reactflow:latest"
 
       image_configuration {
         port = tostring(var.app_port)
