@@ -4,12 +4,12 @@ variable "aws_region" {
 }
 
 variable "env" {
-  description = "Környezet: prod vagy preview"
+  description = "Környezet: dev, preview vagy prod"
   type        = string
   default     = "dev"
   validation {
-    condition     = contains(["prod", "preview"], var.env)
-    error_message = "env csak 'prod' vagy 'preview' lehet."
+    condition     = contains(["dev", "preview", "prod"], var.env)
+    error_message = "env csak 'dev', 'preview' vagy 'prod' lehet."
   }
 }
 
@@ -63,12 +63,14 @@ variable "github_repo" {
   # pl. "terraform-CICD"
 }
 
-variable "backend_bucket" {
-  type = string
+variable "tf_backend_bucket" {
+  type        = string
+  description = "S3 bucket neve a Terraform state-hez"
 }
 
-variable "backend_key" {
+variable "tf_backend_key" {
   type = string
+
 }
 
 variable "backend_dynamodb_table" {
@@ -76,4 +78,27 @@ variable "backend_dynamodb_table" {
 }
 variable "project_name" {
   type = string
+}
+variable "tf_lock_table" {
+  type        = string
+  description = "DynamoDB lock tábla neve"
+}
+variable "create_service" {
+  type    = bool
+  default = false
+}
+
+variable "project" {
+  type    = string
+  default = "reactflow"
+}
+
+variable "app_port" {
+  type    = number
+  default = 8080
+}
+
+variable "image_tag" {
+  type    = string
+  default = "latest"
 }

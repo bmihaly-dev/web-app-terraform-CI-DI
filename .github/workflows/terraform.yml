@@ -6,7 +6,7 @@ on:
     branches: [ "main" ]
 
 permissions:
-  id-token: write     # kell az OIDC-hez
+  id-token: write
   contents: read
 
 env:
@@ -17,6 +17,9 @@ env:
 jobs:
   plan:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -51,12 +54,15 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tf-plan
-          path: plan.out
+          path: terraform/plan.out
 
   apply:
     if: github.ref == 'refs/heads/main'
     needs: [plan]
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

@@ -1,0 +1,43 @@
+name: Build & Push to ECR
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-central-1
+  ECR_REPOSITORY: reactflow
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build image from app/
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          docker build -f ./app/Dockerfile -t $ECR_REPOSITORY:$IMAGE_TAG ./app
+
+      - name: Tag & push (SHA + latest)
+        run: |
+          ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+          REG=${{ env.AWS_REGION }}
+          IMAGE_TAG=${{ env.IMAGE_TAG }}
+          REPO_URL="$ACCOUNT.dkr.ecr.$REG.amazonaws.com/$ECR_REPOSITORY"
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $REPO_URL:$IMAGE_TAG
+          docker tag $ECR_REPOSITORY:$IMAGE_TAG $REPO_URL:latest
+          docker push $REPO_URL:$IMAGE_TAG
+          docker push $REPO_URL:latest

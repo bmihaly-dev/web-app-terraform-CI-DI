@@ -2,7 +2,7 @@
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1", "1c58a3a8518e8759bf075b76b750d4f2df264fcd"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1", "a031c46782e6e6c662c2c87c76da9aa62ccabd8e"]
 }
 
 # IAM Role, amit a GitHub Actions fel tud venni
@@ -12,9 +12,9 @@ resource "aws_iam_role" "gha_tf_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Effect    = "Allow",
+      Effect = "Allow",
       Principal = { Federated = aws_iam_openid_connect_provider.github.arn },
-      Action    = "sts:AssumeRoleWithWebIdentity",
+      Action   = "sts:AssumeRoleWithWebIdentity",
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
@@ -31,7 +31,7 @@ resource "aws_iam_role" "gha_tf_role" {
 # Policy dokumentum: hozzáférés a backendhez (S3 + DynamoDB lock)
 data "aws_iam_policy_document" "gha_backend_only" {
   statement {
-    sid = "S3BackendAccess"
+    sid     = "S3BackendAccess"
     actions = [
       "s3:GetObject",
       "s3:PutObject",
@@ -39,13 +39,13 @@ data "aws_iam_policy_document" "gha_backend_only" {
       "s3:ListBucket"
     ]
     resources = [
-      "arn:aws:s3:::${var.tf_backend_bucket}",
-      "arn:aws:s3:::${var.tf_backend_bucket}/${var.tf_backend_key}"
+      "arn:aws:s3:::${var.backend_bucket}",
+      "arn:aws:s3:::${var.backend_bucket}/${var.backend_key}"
     ]
   }
 
   statement {
-    sid = "DDBLockTable"
+    sid     = "DDBLockTable"
     actions = [
       "dynamodb:PutItem",
       "dynamodb:GetItem",
