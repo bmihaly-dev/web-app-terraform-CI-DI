@@ -20,7 +20,7 @@ resource "aws_iam_role" "gha_tf_role" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         },
         StringLike = {
-          # ENGEDÉS: bármely ref a konkrét repohoz (main, feature/*, pull_request, stb.)
+          
           "token.actions.githubusercontent.com:sub" : "repo:bmihaly-dev/web-app-terraform-CI-DI:*"
         }
       }
