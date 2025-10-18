@@ -20,30 +20,48 @@ resource "aws_iam_role" "gha_tf_role" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         },
         StringLike = {
-          
-          "token.actions.githubusercontent.com:sub" : "repo:bmihaly-dev/web-app-terraform-CI-DI:*"
+          "token.actions.githubusercontent.com:sub" = [
+            "repo:bmihaly-dev/*:ref:refs/heads/main",
+            "repo:bmihaly-dev/*:pull_request"
+          ]
         }
       }
     }]
   })
 }
 
-# Policy dokumentum: hozzáférés a backendhez (S3 + DynamoDB lock)
+
 data "aws_iam_policy_document" "gha_backend_only" {
+  # ListBucket csak a szükséges prefix(ek)re
   statement {
-    sid = "S3BackendAccess"
+    sid       = "S3ListBucketRestricted"
+    actions   = ["s3:ListBucket", "s3:GetBucketLocation", "s3:ListBucketVersions"]
+    resources = ["arn:aws:s3:::${var.tf_backend_bucket}"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:prefix"
+      values   = [var.tf_backend_key, "${var.tf_backend_key}.backup"]
+    }
+  }
+
+  # Objektum műveletek: CSAK a konkrét state és a .backup
+  statement {
+    sid = "S3StateObjectsStrict"
     actions = [
       "s3:GetObject",
       "s3:PutObject",
       "s3:DeleteObject",
-      "s3:ListBucket"
+      "s3:GetObjectVersion",
+      "s3:DeleteObjectVersion"
     ]
     resources = [
-      "arn:aws:s3:::${var.tf_backend_bucket}",
-      "arn:aws:s3:::${var.tf_backend_bucket}/${var.tf_backend_key}"
+      "arn:aws:s3:::${var.tf_backend_bucket}/${var.tf_backend_key}",
+      "arn:aws:s3:::${var.tf_backend_bucket}/${var.tf_backend_key}.backup"
     ]
   }
 
+  # DynamoDB lock tábla
   statement {
     sid = "DDBLockTable"
     actions = [
@@ -58,7 +76,6 @@ data "aws_iam_policy_document" "gha_backend_only" {
     ]
   }
 }
-
 resource "aws_iam_policy" "gha_backend_only" {
   name   = "${var.project_name}-gha-backend-only"
   policy = data.aws_iam_policy_document.gha_backend_only.json

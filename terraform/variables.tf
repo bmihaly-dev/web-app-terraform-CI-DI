@@ -64,8 +64,8 @@ variable "github_repo" {
 }
 
 variable "tf_backend_bucket" {
-  type        = string
-  description = "S3 bucket neve a Terraform state-hez"
+  type = string
+
 }
 
 variable "tf_backend_key" {
@@ -80,8 +80,8 @@ variable "project_name" {
   type = string
 }
 variable "tf_lock_table" {
-  type        = string
-  description = "DynamoDB lock tábla neve"
+  type = string
+
 }
 variable "create_service" {
   type    = bool
