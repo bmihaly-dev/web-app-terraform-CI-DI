@@ -1,18 +1,13 @@
 name: Terraform CI/CD
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 on:
   push:
     branches: [ "main" ]
     paths: [ "terraform/**" ]
   pull_request:
     paths: [ "terraform/**" ]
-  # Fusson akkor is, ha az app workflow sikeresen lefutott
   workflow_run:
-    workflows: ["Build & Push to ECR"]     # <- IDE AZ APP WORKFLOW PONTOS NEVÉT!
+    workflows: ["Build & Push to ECR"]
     types: [completed]
 
 permissions:
@@ -24,22 +19,27 @@ env:
   TF_IN_AUTOMATION: true
   TF_INPUT: false
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   plan:
-    # Ha workflow_run indítja, csak siker esetén menjen
     if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./terraform
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials via OIDC
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gha-${{ github.run_id }}
+          audience: sts.amazonaws.com
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
@@ -70,7 +70,6 @@ jobs:
 
   apply:
     needs: [plan]
-    # main branch-en fusson, akár push, akár workflow_run esetén
     if: >
       (github.event_name != 'workflow_run' && github.ref == 'refs/heads/main')
       || (github.event_name == 'workflow_run'
@@ -81,13 +80,15 @@ jobs:
       run:
         working-directory: ./terraform
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials via OIDC
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-session-name: gha-${{ github.run_id }}
+          audience: sts.amazonaws.com
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
