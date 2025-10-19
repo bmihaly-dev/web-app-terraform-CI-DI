@@ -1,6 +1,6 @@
 variable "aws_region" {
-  
-  type        = string
+
+  type = string
 }
 
 variable "env" {
@@ -38,9 +38,9 @@ variable "memory" {
 }
 
 variable "health_check_path" {
-  
-  type        = string
-  default     = "/"
+
+  type    = string
+  default = "/"
 }
 
 variable "env_vars" {
