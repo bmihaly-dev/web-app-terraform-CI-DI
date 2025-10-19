@@ -1,0 +1,14 @@
+aws_region             = "eu-central-1"
+env                    = "prod"
+account_id             = "154744860201"
+project_name           = "terraform-cicd"
+tf_backend_bucket      = "tf-state-terraform-cicd-154744860201-eu-central-1"
+tf_backend_key         = "terraform.tfstate"
+tf_lock_table          = "tf-lock-web-app-tfcicd"
+backend_dynamodb_table = "tf-lock-terraform-cicd"
+github_owner           = "bmihaly-dev"
+github_repo            = "web-app-terraform-CI-CD"
+project                = "reactflow"
+app_port               = 80
+image_tag              = "latest"
+create_service         = true
