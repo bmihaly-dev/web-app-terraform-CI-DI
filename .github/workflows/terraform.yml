@@ -1,9 +1,19 @@
 name: Terraform CI/CD
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
-  pull_request:
   push:
     branches: [ "main" ]
+    paths: [ "terraform/**" ]
+  pull_request:
+    paths: [ "terraform/**" ]
+  # Fusson akkor is, ha az app workflow sikeresen lefutott
+  workflow_run:
+    workflows: ["Build & Push to ECR"]     # <- IDE AZ APP WORKFLOW PONTOS NEVÉT!
+    types: [completed]
 
 permissions:
   id-token: write
@@ -16,6 +26,8 @@ env:
 
 jobs:
   plan:
+    # Ha workflow_run indítja, csak siker esetén menjen
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,8 +39,8 @@ jobs:
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::154744860201:role/terraform-cicd-gha-terraform-role
-          aws-region: eu-central-1
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -57,8 +69,13 @@ jobs:
           path: terraform/plan.out
 
   apply:
-    if: github.ref == 'refs/heads/main'
     needs: [plan]
+    # main branch-en fusson, akár push, akár workflow_run esetén
+    if: >
+      (github.event_name != 'workflow_run' && github.ref == 'refs/heads/main')
+      || (github.event_name == 'workflow_run'
+          && github.event.workflow_run.conclusion == 'success'
+          && github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     defaults:
       run:
