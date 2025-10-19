@@ -67,11 +67,16 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-      - name: Terraform Plan
-        run: terraform plan -no-color -out=plan.out
+      - name: Terraform Plan (capture)
+        id: plan
+        continue-on-error: true         # a futás nem áll le itt, így fel tudjuk tölteni a logot
+        run: |
+          set -o pipefail
+          terraform plan -no-color -out=plan.out 2>&1 | tee plan.log
 
-      - name: Upload plan
+      - name: Upload plan log
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: tf-plan
-          path: terraform/plan.out
+          name: tf-plan-log
+          path: terraform/plan.log
