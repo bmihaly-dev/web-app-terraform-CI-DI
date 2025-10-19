@@ -134,41 +134,25 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
       {
         Effect   = "Allow",
         Action   = [
-          "s3:ListBucket","s3:GetBucketLocation",
-          "s3:GetObject","s3:PutObject","s3:DeleteObject","s3:PutObjectAcl"
+          "s3:ListBucket","s3:GetBucketLocation"
         ],
-        Resource = [
-          "arn:aws:s3:::${local.bucket_name}",
-          "arn:aws:s3:::${local.bucket_name}/*"
-        ]
+        Resource = "arn:aws:s3:::tf-state-terraform-cicd-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
       },
       {
         Effect   = "Allow",
         Action   = [
-          "dynamodb:DescribeTable","dynamodb:GetItem",
-          "dynamodb:PutItem","dynamodb:DeleteItem","dynamodb:UpdateItem"
+          "s3:GetObject","s3:PutObject","s3:DeleteObject","s3:GetObjectVersion","s3:DeleteObjectVersion","s3:PutObjectAcl"
         ],
-        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${local.lock_table}"
+        Resource = "arn:aws:s3:::tf-state-terraform-cicd-${data.aws_caller_identity.current.account_id}-${var.aws_region}/*"
       },
       {
         Effect   = "Allow",
         Action   = [
-          "apprunner:CreateService","apprunner:UpdateService","apprunner:DeleteService",
-          "apprunner:DescribeService","apprunner:ListServices","apprunner:ListOperations",
-          "apprunner:TagResource","apprunner:UntagResource"
+          "dynamodb:DescribeTable","dynamodb:GetItem","dynamodb:PutItem","dynamodb:DeleteItem","dynamodb:UpdateItem"
         ],
-        Resource = "*"
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/tf-lock-terraform-cicd"
       },
-      {
-        Effect   = "Allow",
-        Action   = ["iam:PassRole"],
-        Resource = aws_iam_role.apprunner_ecr_access.arn
-      },
-      {
-        Effect   = "Allow",
-        Action   = ["sts:GetCallerIdentity"],
-        Resource = "*"
-      }
+      { "Effect":"Allow","Action":["sts:GetCallerIdentity"],"Resource":"*" }
     ]
   })
 }
