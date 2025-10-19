@@ -52,10 +52,10 @@ resource "aws_dynamodb_table" "tf_lock" {
   billing_mode = "PAY_PER_REQUEST"
 
   hash_key = "LockID"
-  attribute { 
-    name = "LockID" 
-    type = "S" 
-    }
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
 
   tags = {
     Project = var.project
@@ -119,7 +119,7 @@ resource "aws_iam_role_policy" "gha_ecr_push_inline" {
 }
 
 ############################
-# Role a Terraform workflow-hoz (backend + App Runner)
+# Role a Terraform workflow-hoz (backend + App Runner + ECR read)
 ############################
 resource "aws_iam_role" "gha_terraform" {
   name               = "terraform-cicd-gha-terraform-role"
@@ -131,27 +131,91 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
+      # --- S3 backend (bucket + objects) ---
       {
         Effect   = "Allow",
-        Action   = [
-          "s3:ListBucket","s3:GetBucketLocation"
-        ],
-        Resource = "arn:aws:s3:::tf-state-terraform-cicd-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+        Action   = ["s3:ListBucket","s3:GetBucketLocation"],
+        Resource = "arn:aws:s3:::${local.bucket_name}"
       },
       {
         Effect   = "Allow",
         Action   = [
-          "s3:GetObject","s3:PutObject","s3:DeleteObject","s3:GetObjectVersion","s3:DeleteObjectVersion","s3:PutObjectAcl"
+          "s3:GetObject","s3:PutObject","s3:DeleteObject",
+          "s3:GetObjectVersion","s3:DeleteObjectVersion","s3:PutObjectAcl"
         ],
-        Resource = "arn:aws:s3:::tf-state-terraform-cicd-${data.aws_caller_identity.current.account_id}-${var.aws_region}/*"
+        Resource = "arn:aws:s3:::${local.bucket_name}/*"
       },
+
+      # --- DynamoDB state lock ---
       {
         Effect   = "Allow",
         Action   = [
-          "dynamodb:DescribeTable","dynamodb:GetItem","dynamodb:PutItem","dynamodb:DeleteItem","dynamodb:UpdateItem"
+          "dynamodb:DescribeTable","dynamodb:GetItem","dynamodb:PutItem",
+          "dynamodb:DeleteItem","dynamodb:UpdateItem"
         ],
-        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/tf-lock-terraform-cicd"
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${local.lock_table}"
       },
+
+      # --- ECR: olvasás + lifecycle policy + auth token ---
+      {
+        Sid      = "EcrReadForPlan",
+        Effect   = "Allow",
+        Action   = [
+          "ecr:DescribeRepositories",
+          "ecr:DescribeImages",
+          "ecr:ListImages",
+          "ecr:ListTagsForResource",
+          "ecr:GetLifecyclePolicy"         # <-- új
+        ],
+        Resource = "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repository}"
+      },
+      # Ha Terraform kezeli az ECR lifecycle policy-t (resource "aws_ecr_lifecycle_policy"),
+      # akkor ezek is kellenek ugyanarra a repo ARN-re:
+      {
+        Sid      = "EcrLifecycleCrudIfManaged",
+        Effect   = "Allow",
+        Action   = [
+          "ecr:PutLifecyclePolicy",
+          "ecr:DeleteLifecyclePolicy"
+        ],
+        Resource = "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repository}"
+      },
+      {
+        Sid      = "EcrAuthToken",
+        Effect   = "Allow",
+        Action   = "ecr:GetAuthorizationToken",
+        Resource = "*"
+      },
+
+      # --- App Runner: szolgáltatás olvasása + tagek listázása ---
+      {
+        Sid      = "AppRunnerRead",
+        Effect   = "Allow",
+        Action   = [
+          "apprunner:DescribeService",
+          "apprunner:ListServices",
+          "apprunner:ListTagsForResource"   # <-- új
+        ],
+        Resource = "arn:aws:apprunner:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/*"
+      },
+
+      # --- IAM: szerepek olvasása + inline policy listázás ---
+      {
+        Sid      = "IamReadAppRunnerRoles",
+        Effect   = "Allow",
+        Action   = [
+          "iam:GetRole",
+          "iam:ListAttachedRolePolicies",
+          "iam:ListRolePolicies",
+          "iam:GetRolePolicy"
+        ],
+        Resource = [
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/AppRunnerECRAccessRole",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/apprunner-access-prod"
+        ]
+      },
+
+      # --- Alap ---
       { "Effect":"Allow","Action":["sts:GetCallerIdentity"],"Resource":"*" }
     ]
   })
