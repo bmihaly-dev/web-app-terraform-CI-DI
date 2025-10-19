@@ -48,8 +48,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
 
       # ← AUTO FMT + COMMIT (nem fog elhasalni a fmt miatt)
-      - name: Terraform fmt (auto)
-        run: terraform fmt -recursive
+     
 
       - name: Commit formatted code
         uses: stefanzweifel/git-auto-commit-action@v5
