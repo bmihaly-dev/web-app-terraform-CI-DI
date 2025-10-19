@@ -1,24 +1,23 @@
-
-
+############################
+# Data-k a már LÉTEZŐ erőforrásokra
+############################
 data "aws_caller_identity" "me" {}
-data "aws_region" "current" {}
 
-
-resource "aws_ecr_repository" "app" {
-  name                 = var.project
-  image_tag_mutability = "MUTABLE"
-  image_scanning_configuration { scan_on_push = true }
-  encryption_configuration { encryption_type = "AES256" }
-
-  force_delete = true
-
-  tags = { Project = var.project }
-
+# ECR repo – ezt a bootstrap hozta létre (név = var.project, pl. "reactflow")
+data "aws_ecr_repository" "app" {
+  name = var.project
 }
 
+# App Runner ECR access role – ezt is a bootstrap hozta létre
+data "aws_iam_role" "apprunner_ecr_access" {
+  name = "AppRunnerECRAccessRole"
+}
 
+############################
+# ECR lifecycle policy (csak hivatkozunk a meglévő repo-ra)
+############################
 resource "aws_ecr_lifecycle_policy" "keep_recent" {
-  repository = aws_ecr_repository.app.name
+  repository = data.aws_ecr_repository.app.name
   policy = jsonencode({
     rules = [{
       rulePriority = 1,
@@ -29,24 +28,9 @@ resource "aws_ecr_lifecycle_policy" "keep_recent" {
   })
 }
 
-
-resource "aws_iam_role" "apprunner_ecr_access" {
-  name = "${var.project}-apprunner-ecr-access"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Effect    = "Allow",
-      Principal = { Service = "build.apprunner.amazonaws.com" },
-      Action    = "sts:AssumeRole"
-    }]
-  })
-}
-resource "aws_iam_role_policy_attachment" "apprunner_ecr_ro" {
-  role       = aws_iam_role.apprunner_ecr_access.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-}
-
-
+############################
+# App Runner service (kizárólag ez az erőforrás jön létre itt)
+############################
 resource "aws_apprunner_service" "app" {
   count        = var.create_service ? 1 : 0
   service_name = "${var.project}-prod"
@@ -56,7 +40,8 @@ resource "aws_apprunner_service" "app" {
 
     image_repository {
       image_repository_type = "ECR"
-      image_identifier      = "154744860201.dkr.ecr.eu-central-1.amazonaws.com/reactflow:latest"
+      # Dinamikus image URI: <account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>
+      image_identifier      = "${data.aws_caller_identity.me.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.project}:${var.image_tag}"
 
       image_configuration {
         port = tostring(var.app_port)
@@ -67,7 +52,8 @@ resource "aws_apprunner_service" "app" {
     }
 
     authentication_configuration {
-      access_role_arn = aws_iam_role.apprunner_ecr_access.arn
+      # Bootstrapban létrehozott role
+      access_role_arn = data.aws_iam_role.apprunner_ecr_access.arn
     }
   }
 
@@ -82,5 +68,3 @@ resource "aws_apprunner_service" "app" {
 
   tags = { Project = var.project }
 }
-
-
