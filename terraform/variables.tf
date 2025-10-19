@@ -38,7 +38,7 @@ variable "memory" {
 }
 
 variable "health_check_path" {
-  description = "Health check HTTP path (statikus appnál maradhat /)"
+  
   type        = string
   default     = "/"
 }
