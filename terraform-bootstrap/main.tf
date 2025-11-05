@@ -17,7 +17,7 @@ locals {
 ############################
 resource "aws_s3_bucket" "tf_state" {
   bucket        = local.bucket_name
-  force_destroy = false
+  force_destroy = true
   tags = {
     Project = var.project
     Purpose = "terraform-state"
@@ -227,6 +227,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
 resource "aws_ecr_repository" "app" {
   name = var.ecr_repository
   image_scanning_configuration { scan_on_push = true }
+  force_delete = true  
   tags = { Project = var.project }
 }
 
