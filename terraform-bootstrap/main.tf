@@ -192,7 +192,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
         Resource = "arn:aws:apprunner:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/*"
       },
 
-      # --- IAM: szerepek olvasása + inline policy listázás ---
+      # --- IAM: szerepek olvasása + inline policy listázás ---sdds
       {
         Sid      = "IamReadAppRunnerRoles",
         Effect   = "Allow",
