@@ -187,7 +187,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
         Action   = [
           "apprunner:DescribeService",
           "apprunner:ListServices",
-          "apprunner:ListTagsForResource"   # <-- új
+          "apprunner:ListTagsForResource"   # <-- úja
         ],
         Resource = "arn:aws:apprunner:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/*"
       },
