@@ -44,9 +44,7 @@ resource "aws_s3_bucket_public_access_block" "tf_state" {
   restrict_public_buckets = true
 }
 
-############################
-# DynamoDB lock table
-############################
+
 resource "aws_dynamodb_table" "tf_lock" {
   name         = local.lock_table
   billing_mode = "PAY_PER_REQUEST"
@@ -63,20 +61,18 @@ resource "aws_dynamodb_table" "tf_lock" {
   }
 }
 
-############################
-# GitHub OIDC provider
-############################
+
 resource "aws_iam_openid_connect_provider" "github" {
   url             = "https://token.actions.githubusercontent.com"
   client_id_list  = ["sts.amazonaws.com"]
-  # GitHub OIDC CA thumbprintek (több érték a váltások miatt)
+ 
   thumbprint_list = [
     "6938fd4d98bab03faadb97b34396831e3780aea1",
     "1b511abead59c6ce207077c0bf0e0043b1382612"
   ]
 }
 
-# Trust policy (repo-szint, minden ref-re)
+
 locals {
   gha_trust_policy = jsonencode({
     Version = "2012-10-17",
@@ -92,9 +88,7 @@ locals {
   })
 }
 
-############################
-# Role az APP build & ECR push-hoz
-############################
+
 resource "aws_iam_role" "gha_ecr_push" {
   name               = "reactflow-gha-ecr-push"
   assume_role_policy = local.gha_trust_policy
@@ -118,9 +112,9 @@ resource "aws_iam_role_policy" "gha_ecr_push_inline" {
   })
 }
 
-############################
+
 # Role a Terraform workflow-hoz (backend + App Runner + ECR read)
-############################
+
 resource "aws_iam_role" "gha_terraform" {
   name               = "terraform-cicd-gha-terraform-role"
   assume_role_policy = local.gha_trust_policy
@@ -131,7 +125,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      # --- S3 backend (bucket + objects) ---
+     
       {
         Effect   = "Allow",
         Action   = ["s3:ListBucket","s3:GetBucketLocation"],
@@ -146,7 +140,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
         Resource = "arn:aws:s3:::${local.bucket_name}/*"
       },
 
-      # --- DynamoDB state lock ---
+      
       {
         Effect   = "Allow",
         Action   = [
@@ -169,8 +163,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
         ],
         Resource = "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repository}"
       },
-      # Ha Terraform kezeli az ECR lifecycle policy-t (resource "aws_ecr_lifecycle_policy"),
-      # akkor ezek is kellenek ugyanarra a repo ARN-re:
+     
       {
         Sid      = "EcrLifecycleCrudIfManaged",
         Effect   = "Allow",
@@ -187,7 +180,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
         Resource = "*"
       },
 
-      # --- App Runner: szolgáltatás olvasása + tagek listázása ---
+      
       {
         Sid      = "AppRunnerRead",
         Effect   = "Allow",
