@@ -47,7 +47,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # ← AUTO FMT + COMMIT (nem fog elhasalni a fmt miatt)
+      #
      
 
       - name: Commit formatted code
@@ -69,7 +69,7 @@ jobs:
 
       - name: Terraform Plan (capture)
         id: plan
-        continue-on-error: true         # a futás nem áll le itt, így fel tudjuk tölteni a logot
+        continue-on-error: true         
         run: |
           set -o pipefail
           terraform plan -no-color -out=plan.out 2>&1 | tee plan.log

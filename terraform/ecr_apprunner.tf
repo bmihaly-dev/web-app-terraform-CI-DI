@@ -1,21 +1,17 @@
-############################
-# Data-k a már LÉTEZŐ erőforrásokra
-############################
+
 data "aws_caller_identity" "me" {}
 
-# ECR repo – ezt a bootstrap hozta létre (név = var.project, pl. "reactflow")
+
 data "aws_ecr_repository" "app" {
   name = var.project
 }
 
-# App Runner ECR access role – ezt is a bootstrap hozta létre
+
 data "aws_iam_role" "apprunner_ecr_access" {
   name = "AppRunnerECRAccessRole"
 }
 
-############################
-# ECR lifecycle policy (csak hivatkozunk a meglévő repo-ra)
-############################
+
 resource "aws_ecr_lifecycle_policy" "keep_recent" {
   repository = data.aws_ecr_repository.app.name
   policy = jsonencode({
@@ -28,9 +24,7 @@ resource "aws_ecr_lifecycle_policy" "keep_recent" {
   })
 }
 
-############################
-# App Runner service (kizárólag ez az erőforrás jön létre itt)
-############################
+
 resource "aws_apprunner_service" "app" {
   count        = var.create_service ? 1 : 0
   service_name = "${var.project}-prod"
@@ -40,7 +34,7 @@ resource "aws_apprunner_service" "app" {
 
     image_repository {
       image_repository_type = "ECR"
-      # Dinamikus image URI: <account>.dkr.ecr.<region>.amazonaws.com/<repo>:<tag>
+      
       image_identifier      = "${data.aws_caller_identity.me.account_id}.dkr.ecr.${var.aws_region}.amazonaws.com/${var.project}:${var.image_tag}"
 
       image_configuration {
@@ -52,7 +46,7 @@ resource "aws_apprunner_service" "app" {
     }
 
     authentication_configuration {
-      # Bootstrapban létrehozott role
+      
       access_role_arn = data.aws_iam_role.apprunner_ecr_access.arn
     }
   }
