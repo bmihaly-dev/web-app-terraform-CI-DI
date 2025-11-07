@@ -44,19 +44,32 @@ ECR repo example: reactflow
 App Runner service: reactflow-prod (auto-deploy enabled for the latest image tag)
 
 📂 Project Structure
-terraform-CICD/
-├── terraform-bootstrap/        # Step 0: bootstrap backend (S3 + DynamoDB)
-│   └── main.tf                 # Creates state bucket and lock table
-├── terraform/                  # Main Terraform configuration
-│   ├── backend.tf              # Remote backend config (S3 + DynamoDB)
-│   ├── iam-oidc.tf             # GitHub OIDC provider + IAM roles
-│   ├── ecr_apprunner.tf        # ECR repository + App Runner service
-│   ├── variables.tf            # Variable definitions
-│   ├── terraform.tfvars        # Your account/repo-specific values
-│   └── outputs.tf              # Example: App Runner public URL
-└── .github/
-    └── workflows/
-        └── terraform.yml       # GitHub Actions workflow (OIDC + Terraform)
+
+📁 terraform-CICD/
+
+📁 terraform-bootstrap/ — Step 0: bootstrap backend (S3 + DynamoDB)
+
+📄 main.tf — Creates state bucket and lock table
+
+📁 terraform/ — Main Terraform configuration
+
+📄 backend.tf — Remote backend config (S3 + DynamoDB)
+
+📄 iam-oidc.tf — GitHub OIDC provider + IAM roles
+
+📄 ecr_apprunner.tf — ECR repository + App Runner service
+
+📄 variables.tf — Variable definitions
+
+📄 terraform.tfvars — Account/repo-specific values
+
+📄 outputs.tf — Example: App Runner public URL
+
+📁 .github/
+
+📁 workflows/
+
+📄 terraform.yml — GitHub Actions workflow (OIDC + Terraform)
 
 ✅ Requirements
 
@@ -69,7 +82,7 @@ GitHub repository (private or public)
 GitHub Actions with OIDC trust enabled (configured by this code)
 
 ⚡ Getting Started
-Step 0 — Bootstrap the Backend
+🔹 Step 0 — Bootstrap the Backend
 
 Before running the main Terraform configuration, create the backend resources using the terraform-bootstrap/ directory.
 This replaces the old manual AWS CLI setup.
@@ -86,11 +99,9 @@ S3 bucket: tf-state-terraform-cicd-<ACCOUNT_ID>-eu-central-1
 
 DynamoDB table: tf-lock-terraform-cicd
 
-💡 It’s recommended to add
-prevent_destroy = true
-to the bucket lifecycle block to avoid accidental deletion.
+💡 It’s recommended to add prevent_destroy = true to the bucket lifecycle block to avoid accidental deletion.
 
-Step 1 — Configure Terraform Variables
+🔹 Step 1 — Configure Terraform Variables
 
 Edit terraform/terraform.tfvars and set your values:
 
@@ -104,9 +115,9 @@ github_repo    = "<your-repo-name>"
 ecr_repository = "reactflow"
 
 
-Ensure github_owner and github_repo exactly match your GitHub repository (case-sensitive).
+Make sure github_owner and github_repo exactly match your GitHub repository (case-sensitive).
 
-Step 2 — GitHub Repository Variables
+🔹 Step 2 — GitHub Repository Variables
 
 In your GitHub repository go to:
 Settings → Secrets and variables → Actions → Variables
@@ -120,20 +131,16 @@ TF_BACKEND_DDB	tf-lock-terraform-cicd
 
 AWS_REGION is already defined in the workflow as eu-central-1.
 
-Step 3 — Build & Push Your Docker Image
+🔹 Step 3 — Build & Push Your Docker Image
 
 This project assumes your application is containerized and stored in AWS Elastic Container Registry (ECR).
 The Terraform code automatically creates the ECR repository.
 
 GitHub Actions will:
-
-Build your Docker image
-
-Authenticate via OIDC
-
-Push the image to ECR
-
-Trigger App Runner auto-deploy (if auto_deployments_enabled = true)
+1️⃣ Build your Docker image
+2️⃣ Authenticate via OIDC
+3️⃣ Push the image to ECR
+4️⃣ Trigger App Runner auto-deploy (if auto_deployments_enabled = true)
 
 ▶️ CI/CD Flow
 Action	Trigger	Description
@@ -159,8 +166,6 @@ terraform.tfstate
 backend credentials or backend.hcl
 
 ✅ Summary
-
-With this setup:
 
 ✅ No AWS keys are stored in GitHub
 🔐 OIDC securely authenticates GitHub Actions to AWS
