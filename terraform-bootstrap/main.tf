@@ -4,17 +4,13 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
-############################
-# Locals – egységes névképzés
-############################
+
 locals {
   bucket_name = "tf-state-${var.project}-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   lock_table  = "tf-lock-${var.project}"
 }
 
-############################
-# S3 backend bucket + kiegészítők
-############################
+
 resource "aws_s3_bucket" "tf_state" {
   bucket        = local.bucket_name
   force_destroy = true
@@ -113,7 +109,7 @@ resource "aws_iam_role_policy" "gha_ecr_push_inline" {
 }
 
 
-# Role a Terraform workflow-hoz (backend + App Runner + ECR read)
+
 
 resource "aws_iam_role" "gha_terraform" {
   name               = "terraform-cicd-gha-terraform-role"
@@ -150,7 +146,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
         Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${local.lock_table}"
       },
 
-      # --- ECR: olvasás + lifecycle policy + auth token ---
+      
       {
         Sid      = "EcrReadForPlan",
         Effect   = "Allow",
@@ -159,7 +155,7 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
           "ecr:DescribeImages",
           "ecr:ListImages",
           "ecr:ListTagsForResource",
-          "ecr:GetLifecyclePolicy"         # <-- új
+          "ecr:GetLifecyclePolicy"         
         ],
         Resource = "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.ecr_repository}"
       },
@@ -187,12 +183,12 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
         Action   = [
           "apprunner:DescribeService",
           "apprunner:ListServices",
-          "apprunner:ListTagsForResource"   # <-- úja
+          "apprunner:ListTagsForResource"   
         ],
         Resource = "arn:aws:apprunner:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/*"
       },
 
-      # --- IAM: szerepek olvasása + inline policy listázás ---sdds
+     
       {
         Sid      = "IamReadAppRunnerRoles",
         Effect   = "Allow",
@@ -208,15 +204,13 @@ resource "aws_iam_role_policy" "gha_terraform_inline" {
         ]
       },
 
-      # --- Alap ---
+      
       { "Effect":"Allow","Action":["sts:GetCallerIdentity"],"Resource":"*" }
     ]
   })
 }
 
-############################
-# ECR repository az alkalmazáshoz
-############################
+
 resource "aws_ecr_repository" "app" {
   name = var.ecr_repository
   image_scanning_configuration { scan_on_push = true }
@@ -224,9 +218,7 @@ resource "aws_ecr_repository" "app" {
   tags = { Project = var.project }
 }
 
-############################
-# App Runner ECR access role
-############################
+
 resource "aws_iam_role" "apprunner_ecr_access" {
   name = "AppRunnerECRAccessRole"
   assume_role_policy = jsonencode({
