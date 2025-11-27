@@ -1,182 +1,104 @@
-# 🚀 **Terraform CI/CD with GitHub OIDC**
+# Web App Terraform CI/CD Project
 
-This project demonstrates how to run Terraform securely from GitHub Actions without storing long-lived AWS credentials.  
-Authentication is handled via **AWS IAM OpenID Connect (OIDC)** trust with GitHub.  
-Terraform remote state is stored in **S3**, and state locking is managed via **DynamoDB**.
+<p align="center">
+  <img src="https://img.shields.io/badge/AWS-Terraform-orange?logo=amazonaws" />
+  <img src="https://img.shields.io/badge/GitHub_Actions-CI%2FCD-black?logo=githubactions" />
+  <img src="https://img.shields.io/badge/AWS-AppRunner-blue?logo=amazonaws" />
+  <img src="https://img.shields.io/badge/AWS-ECR-yellow?logo=amazonaws" />
+</p>
 
----
-
-## 📚 **Table of Contents**
-
-- [📖 About The Project](#-about-the-project)
-- [📂 Project Structure](#-project-structure)
-- [✅ Requirements](#-requirements)
-- [⚡ Getting Started](#-getting-started)
-  - [Step 0 — Bootstrap the Backend](#-step-0--bootstrap-the-backend)
-  - [Step 1 — Configure Terraform Variables](#-step-1--configure-terraform-variables)
-  - [Step 2 — GitHub Repository Variables](#-step-2--github-repository-variables)
-  - [Step 3 — Build & Push Your Docker Image](#-step-3--build--push-your-docker-image)
-- [▶️ CI/CD Flow](#️-cicd-flow)
-- [🔒 Security Notes](#-security-notes)
-- [✅ Summary](#-summary)
-- [📄 License](#-license)
-- [🙌 Acknowledgments](#-acknowledgments)
+<p align="center">
+  End‑to‑end CI/CD pipeline using Terraform IaC, GitHub OIDC, AWS ECR, and App Runner.
+</p>
 
 ---
 
-## 📖 **About The Project**
-
-This setup provides a **fully automated Terraform deployment pipeline** that authenticates to AWS securely via GitHub OIDC — eliminating the need for static AWS credentials.
-
-**Region:** `eu-central-1 (Frankfurt)`  
-**State bucket:** `tf-state-terraform-cicd-<ACCOUNT_ID>-eu-central-1`  
-**Lock table:** `tf-lock-terraform-cicd`  
-**GitHub OIDC role:** `terraform-cicd-gha-terraform-role`  
-**ECR repo example:** `reactflow`  
-**App Runner service:** `reactflow-prod` (auto-deploy enabled for the latest image tag)
+## 📘 Overview
+This project deploys a containerized web application using Terraform and an automated GitHub Actions CI/CD pipeline. Builds are triggered on each push to `main`, and the application is automatically deployed to AWS App Runner using images stored in Amazon ECR.
 
 ---
 
-## 📂 **Project Structure**
+## 🧱 Architecture Overview
 
-terraform-CICD/
-├── terraform-bootstrap/ # Step 0: bootstrap backend (S3 + DynamoDB)
-│ └── main.tf # Creates state bucket and lock table
-├── terraform/ # Main Terraform configuration
-│ ├── backend.tf # Remote backend config (S3 + DynamoDB)
-│ ├── iam-oidc.tf # GitHub OIDC provider + IAM roles
-│ ├── ecr_apprunner.tf # ECR repository + App Runner service
-│ ├── variables.tf # Variable definitions
-│ ├── terraform.tfvars # Your account/repo-specific values
-│ └── outputs.tf # Example: App Runner public URL
-└── .github/
-└── workflows/
-└── terraform.yml # GitHub Actions workflow (OIDC + Terraform)
+### AWS Components
+- Amazon ECR repository for Docker images
+- AWS App Runner service for running the application
+- IAM roles for Terraform and CI/CD execution
+- S3 backend for Terraform state
+- DynamoDB table for state locking
 
-yaml
-
+### CI/CD Flow
+1. Push to `main`  
+2. GitHub Actions builds Docker image  
+3. Authenticate via OIDC  
+4. Push image to ECR  
+5. Terraform apply triggers App Runner deploy  
+6. App Runner pulls new image and updates the live app
 
 ---
 
-## ✅ **Requirements**
+## 📂 Repository Structure
 
-- AWS account with permissions to create S3, DynamoDB, IAM, ECR, and App Runner resources  
-- Terraform ≥ 1.3  
-- GitHub repository (private or public)  
-- GitHub Actions with OIDC trust enabled (configured by this code)
+```
+terraform-bootstrap/          → S3 backend + DynamoDB lock
+terraform/                    → App Runner + IAM + ECR + networking
+app/                          → Application source + Dockerfile
+.github/workflows/app-ci.yml  → CI/CD pipeline
+```
 
 ---
 
-## ⚡ **Getting Started**
+## 🏁 Getting Started
 
-### 🔹 **Step 0 — Bootstrap the Backend**
-
-Before running the main Terraform configuration, create the backend resources using the `terraform-bootstrap/` directory.  
-This replaces the old manual AWS CLI setup.
-
-```bash
+### 1. Bootstrap Backend
+```
 cd terraform-bootstrap
+terraform init
+terraform apply
+```
+
+### 2. Deploy Infra
+```
+cd terraform
 terraform init
 terraform plan
 terraform apply
-This step creates:
-
-S3 bucket: tf-state-terraform-cicd-<ACCOUNT_ID>-eu-central-1
-
-DynamoDB table: tf-lock-terraform-cicd
-
-💡 It’s recommended to add
-prevent_destroy = true
-to the bucket lifecycle block to avoid accidental deletion.
-
-🔹 Step 1 — Configure Terraform Variables
-Edit terraform/terraform.tfvars and set your values:
-
-```hcl
-aws_region     = "eu-central-1"
-account_id     = "<your-account-id>"
-project        = "terraform-cicd"
-
-github_owner   = "<your-github-username>"
-github_repo    = "<your-repo-name>"
-
-ecr_repository = "reactflow"
 ```
 
-Ensure github_owner and github_repo exactly match your GitHub repository (case-sensitive).
+### 3. Trigger CI/CD
+Push any commit to `main`:
+- Docker image built
+- Pushed to ECR
+- App Runner service redeployed
 
 ---
 
-### 🔹 **Step 2 — GitHub Repository Variables**
-
-In your GitHub repository go to:  
-**Settings → Secrets and variables → Actions → Variables**  
-and add the following:
-
-| Name | Value |
-|------|--------|
-| AWS_ROLE_TO_ASSUME | `arn:aws:iam::<ACCOUNT_ID>:role/terraform-cicd-gha-terraform-role` |
-| TF_BACKEND_BUCKET | `tf-state-terraform-cicd-<ACCOUNT_ID>-eu-central-1` |
-| TF_BACKEND_KEY | `terraform.tfstate` |
-| TF_BACKEND_DDB | `tf-lock-terraform-cicd` |
-
-> `AWS_REGION` is already defined in the workflow as `eu-central-1`.
+## 🌐 Accessing the Application
+Retrieve the App Runner URL in AWS console or via CLI:
+```
+aws apprunner list-services
+```
 
 ---
 
-### 🔹 **Step 3 — Build & Push Your Docker Image**
-
-This project assumes your application is containerized and stored in **AWS Elastic Container Registry (ECR)**.  
-The Terraform code automatically creates the ECR repository.
-
-GitHub Actions will:  
-1️⃣ Build your Docker image  
-2️⃣ Authenticate via OIDC  
-3️⃣ Push the image to ECR  
-4️⃣ Trigger App Runner auto-deploy (if `auto_deployments_enabled = true`)
+## 🔄 CI/CD Summary
+- Automated Docker builds
+- Secure GitHub OIDC authentication
+- Zero-downtime App Runner deploys
+- ECR image versioning with SHA tags
 
 ---
 
-## ▶️ **CI/CD Flow**
-
-| Action | Trigger | Description |
-|--------|----------|-------------|
-| Pull Request | `terraform plan` | Runs automatically, uploads plan artifact |
-| Merge to main | `terraform apply` | Applies changes to AWS |
-| Image Push to ECR | `auto deploy` | App Runner detects new image and redeploys |
-| Manual run | `workflow_dispatch` | Optional local or manual execution |
-
----
-
-## 🔒 **Security Notes**
-
-- IAM trust policy is scoped strictly to your repository:  
-  `repo:<github_owner>/<github_repo>:*`
-- OIDC thumbprints required (already configured):  
-  ```
-  6938fd4d98bab03faadb97b34396831e3780aea1
-  1b511abead59c6ce207077c0bf0e0043b1382612
-  ```
-- Never commit:  
-  ```
-  .terraform/
-  terraform.tfstate
-  backend credentials or backend.hcl
-  ```
+## 🧹 Destroy
+Destroy in this order:
+```
+cd terraform
+terraform destroy
+cd ../terraform-bootstrap
+terraform destroy
+```
 
 ---
 
-## ✅ **Summary**
-
-✅ **No AWS keys are stored in GitHub**  
-🔐 **OIDC securely authenticates GitHub Actions to AWS**  
-📦 **Terraform state stored remotely in S3**  
-🔒 **State locking handled by DynamoDB**  
-⚙️ **Fully automated pipeline: plan on PR → apply on main**  
-🚀 **App Runner auto-deploys whenever a new Docker image is pushed to ECR**
-
----
-
-
-
-
+## 📞 Contact
+GitHub: https://github.com/bmihaly-dev
